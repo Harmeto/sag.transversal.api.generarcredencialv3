@@ -1,0 +1,15 @@
+{
+  "PlantillaId": 3,
+  "GenerarQR": false,
+  "DatosCredencial": {
+    "numeroRegistro": "8f3b2c1e-5a7d-4e9f-b2c3-1d4e5f6a7b8c",
+    "fecha": "05-09-2026",
+    "usuario": "María José Contreras Pérez",
+    "rup": "05.3.01.0123",
+    "nombreEstablecimiento": "Humedal El Yali, sector laguna Colejuda",
+    "codigoZona": "c4d1e2f3-9a8b-4c7d-8e6f-2a1b3c4d5e6f",
+    "nombreZona": "Zona de vigilancia Litoral Central",
+    "especies": "\n    <table class=\"normal-table\">\n        <thead>\n            <th class=\"normalColumnKey\">Nombre Especie Silvestre</th>\n            <th class=\"normalColumnKey\" style=\"text-align: center;\">Cantidad Muertos</th>\n            <th class=\"normalColumnKey\" style=\"text-align: center;\">Cantidad Eutanasiados</th>\n            <th class=\"normalColumnKey\" style=\"text-align: center;\">Cantidad de Muestras</th>\n        </thead>\n        <tbody>\n            \n        <tr>\n            <td class=\"normalColumnValue\">Cisne de cuello negro (Cygnus melancoryphus)</td>\n            <td class=\"normalColumnValue\" style=\"text-align: center;\">12</td>\n            <td class=\"normalColumnValue\" style=\"text-align: center;\">3</td>\n            <td class=\"normalColumnValue\" style=\"text-align: center;\">5</td>\n        </tr>\n      \n        <tr>\n            <td class=\"normalColumnValue\">Gaviota dominicana (Larus dominicanus)</td>\n            <td class=\"normalColumnValue\" style=\"text-align: center;\">7</td>\n            <td class=\"normalColumnValue\" style=\"text-align: center;\">0</td>\n            <td class=\"normalColumnValue\" style=\"text-align: center;\">2</td>\n        </tr>\n      \n        <tr>\n            <td class=\"normalColumnValue\">Pelícano (Pelecanus thagus)</td>\n            <td class=\"normalColumnValue\" style=\"text-align: center;\">4</td>\n            <td class=\"normalColumnValue\" style=\"text-align: center;\">1</td>\n            <td class=\"normalColumnValue\" style=\"text-align: center;\">4</td>\n        </tr>\n      \n        </tbody>\n    </table>\n    ",
+    "observaciones": "Aves encontradas en la orilla norte de la laguna con signos neurológicos (incoordinación, tortícolis). Se tomaron muestras de hisopado traqueal y cloacal y se enviaron al laboratorio Lo Aguirre. Se coordinó con la municipalidad el retiro y disposición de los cadáveres."
+  }
+}

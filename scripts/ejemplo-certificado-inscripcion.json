@@ -1,0 +1,10 @@
+{
+  "PlantillaId": 5,
+  "GenerarQR": false,
+  "QRTag": "QR",
+  "DatosCredencial": {
+    "nombre": "AGROINSUMOS DEL SUR S.A.",
+    "region": "Región Metropolitana",
+    "mesano": "septiembre de 2026"
+  }
+}

@@ -1,0 +1,44 @@
+[package]
+name = "sag-transversal-api-generarcredencialv3"
+version = "3.0.0"
+edition = "2021"
+description = "API transversal de generación de documentos PDF del SAG (v3): Rust + Typst + PostgreSQL"
+license = "ISC"
+publish = false
+
+[[bin]]
+name = "generarcredencialv3"
+path = "src/main.rs"
+
+[[bin]]
+name = "bench-render"
+path = "src/bin/bench_render.rs"
+
+[dependencies]
+axum = { version = "0.8", features = ["macros"] }
+tokio = { version = "1", features = ["full"] }
+tower-http = { version = "0.6", features = ["cors", "trace"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["preserve_order"] }
+sqlx = { version = "0.8", features = ["runtime-tokio", "tls-rustls", "postgres", "uuid", "chrono", "migrate"] }
+uuid = { version = "1", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+chrono-tz = "0.10"
+typst-as-lib = { version = "0.16", features = ["typst-kit-fonts", "typst-kit-embed-fonts"] }
+typst = "0.15"
+typst-pdf = "0.15"
+typst-layout = "0.15"
+qrcode = { version = "0.14", default-features = false, features = ["svg"] }
+base64 = "0.22"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+dotenvy = "0.15"
+thiserror = "2"
+anyhow = "1"
+unicode-normalization = "0.1"
+futures = "0.3"
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 4

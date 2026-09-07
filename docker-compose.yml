@@ -1,0 +1,26 @@
+# Entorno local autocontenido (opcional: en este equipo se usa el contenedor sag-postgres existente).
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: generador_credenciales_v3
+    ports:
+      - "5434:5432"
+    volumes:
+      - pgdata_v3:/var/lib/postgresql/data
+
+  api:
+    build: .
+    depends_on:
+      - postgres
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/generador_credenciales_v3
+      STORAGE_PUBLIC_URL: http://localhost:3345/archivos
+      LOG_LEVEL: info
+    ports:
+      - "3345:3345"
+
+volumes:
+  pgdata_v3:

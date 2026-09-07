@@ -1,0 +1,8 @@
+{
+  "PlantillaId": 1,
+  "GenerarQR": false,
+  "DatosCredencial": {
+    "nombre": "Juan Pablo",
+    "apellido": "Rojas Ibáñez"
+  }
+}

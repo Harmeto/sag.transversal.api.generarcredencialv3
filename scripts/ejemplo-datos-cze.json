@@ -1,0 +1,78 @@
+{
+  "PlantillaId": 1,
+  "GenerarQR": false,
+  "DatosCredencial": {
+    "numero_solicitud": "CZE-2026-000123",
+    "fecha_solicitud": "03/09/2026",
+    "rut_solicitante": "15.073.601-3",
+    "nombre_solicitante": "Guido Felipe Urrea",
+    "correo_solicitante": "guido.urrea@ejemplo.cl",
+    "viaja_con_mascota": "Sí",
+    "rut_exportador": "76.123.456-7",
+    "nombre_exportador": "Transportes Mascotas Ltda.",
+    "direccion_exportador": "Av. Libertador 1234, Santiago",
+    "correo_exportador": "contacto@transportesmascotas.cl",
+    "telefono_celular_exportador": "+56 9 5874 1258",
+    "telefono_fijo_exportador": "+56 2 2345 6789",
+    "fecha_salida": "15/09/2026",
+    "region_salida": "Región Metropolitana de Santiago",
+    "medio_transporte": "Avión",
+    "aerolinea": "LATAM Airlines",
+    "pais_destino": "España",
+    "codigo_postal": "28001",
+    "control_fronterizo_salida_chile": "Aeropuerto Arturo Merino Benítez",
+    "control_fronterizo_destino": "Aeropuerto Adolfo Suárez Madrid-Barajas",
+    "salida_temporal": "No",
+    "fecha_emision": "06/09/2026 10:15:32",
+    "nombre_generador": "María José Contreras",
+    "cargo_generador": "Médico Veterinario Oficial",
+    "region_generador": "Región Metropolitana",
+    "mascotas": [
+      {
+        "nombre": "Rocky",
+        "especieId": "Canino",
+        "raza": "Labrador Retriever",
+        "sexo": "Macho",
+        "colorPelaje": "Dorado",
+        "fechaNacimiento": "2021-03-15T00:00:00.000Z",
+        "microchip": {
+          "tipo": "microchip",
+          "numeroMicroChip": "956000012345678",
+          "fecha": "2021-05-20T00:00:00.000Z",
+          "parteDelCuerpo": "Cuello, lado izquierdo"
+        },
+        "veterinario": { "rut": "12.345.678-9", "nombres": "Carla Andrea", "apellidos": "Muñoz Pérez" },
+        "vacunas": [
+          { "nombre": "Antirrábica", "tipo": "Obligatoria", "fechaVacuna": "2025-10-01T00:00:00.000Z", "laboratorio": "Zoetis", "numeroSerie": "RB-88213", "fechaVigencia": "2026-10-01T00:00:00.000Z" },
+          { "nombre": "Séxtuple", "tipo": "Complementaria", "fechaVacuna": "2025-11-12T00:00:00.000Z", "laboratorio": "MSD", "numeroSerie": "SX-10021", "fechaVigencia": "2026-11-12T00:00:00.000Z" },
+          { "nombre": "Leptospirosis", "tipo": "Complementaria", "fechaVacuna": "2026-01-08T00:00:00.000Z", "laboratorio": "Boehringer", "numeroSerie": "LP-7741", "fechaVigencia": "2027-01-08T00:00:00.000Z" }
+        ],
+        "desparasitaciones": [
+          { "nombre": "Drontal Plus", "tipo": "Interna", "fechaAplicacion": "2026-08-20T00:00:00.000Z", "laboratorio": "Bayer", "componente": "Praziquantel", "numeroSerie": "DP-3321", "fechaProximaAplicacion": "2026-11-20T00:00:00.000Z" },
+          { "nombre": "Bravecto", "tipo": "Externa", "fechaAplicacion": "2026-07-02T00:00:00.000Z", "laboratorio": "MSD", "componente": "Fluralaner", "numeroSerie": "BV-9182", "fechaProximaAplicacion": "2026-10-02T00:00:00.000Z" }
+        ]
+      },
+      {
+        "nombre": "Misha",
+        "especieId": "Felino",
+        "raza": "Siamés",
+        "sexo": "Hembra",
+        "colorPelaje": "Crema con puntos oscuros",
+        "fechaNacimiento": "2019-11-02T00:00:00.000Z",
+        "microchip": {
+          "tipo": "identificacionExterna",
+          "numeroRegistro": "RM-2019-55871",
+          "estadoRegistroMunicipal": "Vigente"
+        },
+        "veterinario": { "rut": "9.876.543-2", "nombres": "Rodrigo", "apellidos": "Salinas Vera" },
+        "vacunas": [
+          { "nombre": "Antirrábica", "tipo": "Obligatoria", "fechaVacuna": "2026-02-14T00:00:00.000Z", "laboratorio": "Zoetis", "numeroSerie": "RB-90411", "fechaVigencia": "2027-02-14T00:00:00.000Z" },
+          { "nombre": "Triple felina", "tipo": "Complementaria", "fechaVacuna": "2026-02-14T00:00:00.000Z", "laboratorio": "Virbac", "numeroSerie": "TF-2210", "fechaVigencia": "2027-02-14T00:00:00.000Z" }
+        ],
+        "desparasitaciones": [
+          { "nombre": "Milbemax", "tipo": "Interna", "fechaAplicacion": "2026-08-01T00:00:00.000Z", "laboratorio": "Elanco", "componente": "Milbemicina", "numeroSerie": "MB-1102", "fechaProximaAplicacion": "2026-11-01T00:00:00.000Z" }
+        ]
+      }
+    ]
+  }
+}

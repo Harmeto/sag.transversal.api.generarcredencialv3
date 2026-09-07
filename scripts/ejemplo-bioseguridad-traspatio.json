@@ -1,0 +1,30 @@
+{
+  "PlantillaId": 2,
+  "GenerarQR": true,
+  "QRTag": "QR",
+  "DatosCredencial": {
+    "nombreFirmante": "MARÍA JOSÉ CONTRERAS",
+    "cargoFirmante": "FISCALIZADOR SAG",
+    "folio": "TRS-2026-000412",
+    "nombreCompleto": "Juan Pablo Rojas Ibáñez",
+    "rutRepresentanteLegal": "12.345.678-9",
+    "nombreEstablecimiento": "Gallinero familiar Los Aromos",
+    "rupEstablecimiento": "No tiene Rup",
+    "actividad": "Huevo",
+    "nombreCalle": "Camino El Manzano parcela 14, Paine",
+    "numeroCalle": "",
+    "ciudad": "",
+    "nombreComuna": "",
+    "nombreRegion": "Región Metropolitana de Santiago",
+    "contacto": "+56 9 8765 4321",
+    "tipoProduccion": "Aves libres",
+    "fechaEmision": "06/09/2026 15:02",
+    "urlVerificacion": "https://verificacion.sag.gob.cl/bioseguridad/TRS-2026-000412",
+    "porcentajeCumplimiento": "73",
+    "secciones": "[{\"titulo\": \"Manual Bioseguridad\", \"preguntas\": [{\"numero\": \"1.1\", \"pregunta\": \"Cuenta con un manual o pauta de bioseguridad para el manejo de sus aves\", \"respuesta\": \"NO\"}, {\"numero\": \"1.2\", \"pregunta\": \"Conoce las medidas básicas de bioseguridad para evitar el ingreso de enfermedades\", \"respuesta\": \"SI\"}]}, {\"titulo\": \"Responsabilidades del Titular del Predio o Domicilio\", \"preguntas\": [{\"numero\": \"2.1\", \"pregunta\": \"Restringe el ingreso de personas ajenas al lugar donde mantiene las aves\", \"respuesta\": \"SI\"}, {\"numero\": \"2.2\", \"pregunta\": \"Evita el contacto de sus aves con aves silvestres\", \"respuesta\": \"PARCIAL\"}, {\"numero\": \"2.3\", \"pregunta\": \"Notifica al SAG ante la aparición de aves enfermas o muertas\", \"respuesta\": \"SI\"}]}, {\"titulo\": \"Observaciones\", \"observacion\": \"El titular se compromete a construir un cierre perimetral antes de la próxima visita.\"}, {\"titulo\": \"Medidas de Bioseguridad para avicultura de la AFC o Traspatio\", \"preguntas\": [{\"numero\": \"3.1\", \"pregunta\": \"Mantiene ropa y zapatos exclusivos para trabajar con las aves\", \"respuesta\": \"NO\"}, {\"numero\": \"3.2\", \"pregunta\": \"Limpia periódicamente los bebederos y comederos\", \"respuesta\": \"SI\"}, {\"numero\": \"3.3\", \"pregunta\": \"Limpia y desinfecta los materiales o equipos que se utilizan con las aves\", \"respuesta\": \"SI\"}, {\"numero\": \"3.4\", \"pregunta\": \"Realiza manejo de plagas y roedores en el domicilio o predio\", \"respuesta\": \"PARCIAL\"}, {\"numero\": \"3.5\", \"pregunta\": \"La basura domiciliaria esta en contenedores cerrados, alejados del gallinero\", \"respuesta\": \"SI\"}]}, {\"titulo\": \"Observaciones\", \"observacion\": null}, {\"titulo\": \"Medidas de Bioseguridad para manejo de Aves\", \"preguntas\": [{\"numero\": \"4.1\", \"pregunta\": \"Cambia a diario del agua de bebida\", \"respuesta\": \"SI\"}, {\"numero\": \"4.2\", \"pregunta\": \"El agua de bebida proviene de agua potable o de pozo\", \"respuesta\": \"SI\"}, {\"numero\": \"4.3\", \"pregunta\": \"El alimento es almacenado en contenedores cerrados\", \"respuesta\": \"NO\"}, {\"numero\": \"4.4\", \"pregunta\": \"Retira diariamente los huevos producidos\", \"respuesta\": \"SI\"}, {\"numero\": \"4.5\", \"pregunta\": \"Cuenta con registro de los procedimientos veterinarios realizados a las aves\", \"respuesta\": \"NA\"}]}, {\"titulo\": \"Observaciones\", \"observacion\": \"\"}]",
+    "s1_obs": "El titular se compromete a construir un cierre perimetral antes de la próxima visita.",
+    "s2_obs": "",
+    "s3_obs": "",
+    "cantidadAves": "35"
+  }
+}

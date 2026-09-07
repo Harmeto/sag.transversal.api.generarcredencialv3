@@ -1,0 +1,32 @@
+{
+  "PlantillaId": 5,
+  "GenerarQR": false,
+  "DatosCredencial": {
+    "folio": "13/145/26/00042",
+    "nombre-exportador": "Guido Felipe Urrea Soto",
+    "direccion-exportador": "Av. libertador bernardo o'higgins 1234, depto 56, santiago",
+    "rut-exportador": "15.073.601-3",
+    "especie": "Canino",
+    "nombre_mascota": "Rocky",
+    "numero_microchip": "956000012345678",
+    "fecha_lugar_microchip": "20-05-2021 - Cuello, lado izquierdo",
+    "fecha_nacimiento_mascota": "15-03-2021",
+    "sexo": "Macho",
+    "raza": "Labrador retriever",
+    "color": "Dorado",
+    "medio-transporte": "Avión",
+    "control-fronterizo": "Aeropuerto arturo merino benítez",
+    "pais-escala": "N/A",
+    "control-fronterizo-argentino": "Aeropuerto Internacional Ministro Pistarini Ezeiza",
+    "observaciones": "La mascota viaja en cabina junto a su propietario. Regresa a Chile dentro de 30 días.",
+    "fecha-emision": "07-09-2026 10:15",
+    "nombre-del-veterinario": "Carla Andrea Muñoz Pérez",
+    "firmante_cargo": "Médico Veterinario Oficial",
+    "firmante_rut": "12.345.678-9",
+    "firmante_region_nombre": "Region Metropolitana de Santiago",
+    "firmante_region_id": "13",
+    "vacunacion_antirrabica": "<tr>\n            <td>Rocky - 956000012345678</td>\n            <td>01-10-2025</td>\n            <td>Nobivac Rabia</td>\n            <td>MSD Animal Health</td>\n            <td>RB-88213</td>\n            <td>01-10-2026</td>\n        </tr>",
+    "tratamiento_antiparasitario": "<tr>\n            <td>Interno</td>\n            <td>20-08-2026</td>            \n            <td>Bayer</td>\n            <td>Drontal Plus</td>\n            <td>Praziquantel / Pirantel / Febantel</td>\n        </tr><tr>\n            <td>Externo</td>\n            <td>25-08-2026</td>            \n            <td>MSD Animal Health</td>\n            <td>Bravecto</td>\n            <td>Fluralaner</td>\n        </tr>",
+    "parrafo-vacunas": "La vacuna antirrábica fue aplicada dentro del periodo de vigencia exigido por SENASA y la mascota no ha presentado reacciones adversas."
+  }
+}
