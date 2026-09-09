@@ -94,10 +94,11 @@
   place(top + left, dx: px(250), dy: 23pt, block(width: 60%,
     text(size: tam-h3, weight: "bold", fill: gris)[MINISTERIO DE AGRICULTURA \ SERVICIO AGRÍCOLA Y GANADERO]))
   place(top + left, dx: px(710), dy: folio-dy, val("folio"))
-  place(top + left, dy: 65pt, stack(dir: ttb, spacing: 1.5pt,
+  // el enlace y el número de página ocupan todo el ancho (divs de bloque bajo el título)
+  place(top + left, dy: 60pt, block(width: 100%, stack(dir: ttb, spacing: 1.5pt,
     align(center, link("https://www.sag.gob.cl", text(fill: rgb("#0000ee"), underline[https://www.sag.gob.cl]))),
     align(right)[Página #counter(page).display() de #counter(page).final().first()],
-  ))
+  )))
 })
 
 // Tabla con bordes negros (border-collapse, th/td border 1px)

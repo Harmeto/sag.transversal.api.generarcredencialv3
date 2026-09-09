@@ -3,6 +3,7 @@
 //! v3 conserva esa convención; el adaptador local sirve los archivos por HTTP
 //! para que la URL devuelta funcione en desarrollo.
 
+pub mod azure;
 pub mod local;
 
 use futures::future::BoxFuture;

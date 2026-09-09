@@ -1,7 +1,18 @@
-//! Nombres de contenedor y documento. Deben ser idénticos a los de v2 porque forman
-//! la URL pública ya impresa en QR de credenciales emitidas:
+//! Nombres de contenedor y documento. Forman la URL pública que queda impresa en los
+//! códigos QR de las credenciales emitidas, así que se conserva la convención de v2:
 //!   contenedor = snake_case(sin_acentos(categoria).to_lowercase())
 //!   documento  = snake_case(sin_acentos(plantilla).to_lowercase()) + "_" + aaaa-mm-dd (UTC) + "_" + uuid
+//!
+//! Con una corrección obligada: **Azure no acepta guion bajo en el nombre de un
+//! contenedor** (sólo minúsculas, dígitos y guion medio, entre 3 y 63 caracteres, sin
+//! guion al principio ni al final ni repetido). La convención de v2 produce guion bajo
+//! en cuanto la categoría tiene más de una palabra, y Azure responde 400
+//! `InvalidResourceName`, así que esos contenedores nunca pudieron existir: no hay URL
+//! emitida que preservar. Por eso, y sólo para el nombre del contenedor, el guion bajo
+//! se convierte en guion medio. Las categorías de una sola palabra no cambian, que son
+//! justamente aquellas para las que sí puede haber credenciales emitidas.
+//!
+//! El nombre del documento no se toca: en un blob el guion bajo es válido.
 
 use unicode_normalization::UnicodeNormalization;
 use uuid::Uuid;
@@ -20,8 +31,33 @@ pub fn snake_case(nombre: &str) -> String {
         .join("_")
 }
 
+/// Nombre de contenedor válido para Azure Blob Storage.
 pub fn nombre_contenedor(categoria: &str) -> String {
-    snake_case(categoria)
+    let base = snake_case(categoria).replace('_', "-");
+
+    // Colapsa guiones repetidos y recorta los de los extremos.
+    let mut limpio = String::with_capacity(base.len());
+    for c in base.chars() {
+        if c == '-' && (limpio.is_empty() || limpio.ends_with('-')) {
+            continue;
+        }
+        limpio.push(c);
+    }
+    while limpio.ends_with('-') {
+        limpio.pop();
+    }
+
+    // Azure exige entre 3 y 63 caracteres.
+    if limpio.len() > 63 {
+        limpio.truncate(63);
+        while limpio.ends_with('-') {
+            limpio.pop();
+        }
+    }
+    while limpio.len() < 3 {
+        limpio.push('0');
+    }
+    limpio
 }
 
 pub fn nombre_documento(plantilla: &str, uuid: Uuid) -> String {
@@ -39,6 +75,28 @@ mod tests {
         assert_eq!(snake_case("Certificación Alcoholes"), "certificacion_alcoholes");
         assert_eq!(snake_case("Nombre del contenedor"), "nombre_del_contenedor");
         assert_eq!(snake_case("Mosca-Fruta  visita"), "mosca_fruta_visita");
+    }
+
+    #[test]
+    fn contenedor_valido_para_azure() {
+        // Una sola palabra: idéntico a v2, así que las URL ya emitidas siguen sirviendo.
+        assert_eq!(nombre_contenedor("Mascotas"), "mascotas");
+        assert_eq!(nombre_contenedor("Plaguicidas"), "plaguicidas");
+        // Varias palabras: guion medio en vez de guion bajo, que Azure rechaza.
+        assert_eq!(nombre_contenedor("Emergencias Pecuarias"), "emergencias-pecuarias");
+        assert_eq!(nombre_contenedor("Alimentación Animal"), "alimentacion-animal");
+        assert_eq!(nombre_contenedor("Mosca  de   la Fruta"), "mosca-de-la-fruta");
+        // Casos límite del formato que exige Azure.
+        assert_eq!(nombre_contenedor("  --Al--  "), "al0");
+        assert_eq!(nombre_contenedor("A"), "a00");
+        let largo = nombre_contenedor(&"palabra ".repeat(20));
+        assert!(largo.len() <= 63 && !largo.ends_with('-'));
+    }
+
+    #[test]
+    fn el_nombre_del_documento_conserva_el_guion_bajo() {
+        let id = Uuid::nil();
+        assert!(nombre_documento("Bioseguridad Traspatio", id).starts_with("bioseguridad_traspatio_"));
     }
 
     #[test]

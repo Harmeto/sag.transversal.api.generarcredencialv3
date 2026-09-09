@@ -1,0 +1,9 @@
+target/
+.venv/
+.cache/
+storage/
+tmp/
+.env
+.git/
+docs/
+node_modules/

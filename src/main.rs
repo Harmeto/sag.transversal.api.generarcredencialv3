@@ -1,9 +1,10 @@
 use anyhow::Context;
-use sag_transversal_api_generarcredencialv3::config::Config;
+use sag_transversal_api_generarcredencialv3::config::{Config, OrigenStorage};
 use sag_transversal_api_generarcredencialv3::http::{router, AppState, PREFIJO};
 use sag_transversal_api_generarcredencialv3::render::typst_renderer::TypstRenderer;
 use sag_transversal_api_generarcredencialv3::render::RenderPool;
 use sag_transversal_api_generarcredencialv3::services::generar_credencial::GeneradorCredencial;
+use sag_transversal_api_generarcredencialv3::storage::azure::AzureBlobStorage;
 use sag_transversal_api_generarcredencialv3::storage::local::LocalStorage;
 use sag_transversal_api_generarcredencialv3::storage::Storage;
 use sqlx::postgres::PgPoolOptions;
@@ -15,16 +16,26 @@ use tracing_subscriber::EnvFilter;
 async fn main() -> anyhow::Result<()> {
     let inicio = Instant::now();
     dotenvy::dotenv().ok();
+
+    // La configuración se carga ANTES de inicializar los logs porque el nivel de
+    // log vive en Consul (`logLevel`). Hasta entonces, los mensajes van a stderr.
+    let cfg = Config::cargar().await?;
+
     tracing_subscriber::fmt()
-        .with_env_filter(EnvFilter::try_from_env("LOG_LEVEL").unwrap_or_else(|_| EnvFilter::new("info")))
+        .with_env_filter(EnvFilter::try_new(&cfg.log_level).unwrap_or_else(|_| EnvFilter::new("info")))
         .init();
 
-    let cfg = Config::desde_entorno()?;
+    tracing::info!(
+        app = %cfg.app_name,
+        entorno = %cfg.entorno,
+        db = %cfg.destino_db(),
+        "configuración cargada"
+    );
 
     // Base de datos + migraciones (idempotentes).
     let pool = PgPoolOptions::new()
         .max_connections(10)
-        .connect(&cfg.database_url)
+        .connect_with(cfg.opciones_pg()?)
         .await
         .context("no se pudo conectar a PostgreSQL")?;
     sqlx::migrate!("./migrations").run(&pool).await.context("fallaron las migraciones")?;
@@ -32,7 +43,8 @@ async fn main() -> anyhow::Result<()> {
 
     // Motor de render: se construye una vez y se precalienta.
     let renderer = TypstRenderer::nuevo(&cfg.plantillas_dir, cfg.fonts_dir.as_deref())?;
-    let rutas: Vec<String> = sqlx::query_scalar("SELECT ruta FROM plantilla WHERE motor = 'typst'").fetch_all(&pool).await?;
+    let rutas: Vec<String> =
+        sqlx::query_scalar("SELECT ruta FROM plantilla WHERE motor = 'typst'").fetch_all(&pool).await?;
     for ruta in &rutas {
         let t = Instant::now();
         match renderer.precalentar(ruta) {
@@ -42,9 +54,26 @@ async fn main() -> anyhow::Result<()> {
     }
     let render = RenderPool::nuevo(Arc::new(renderer), cfg.render_concurrency);
 
-    // Storage: adaptador local (Azure Blob queda como siguiente adaptador, ver README).
-    let local = Arc::new(LocalStorage::nuevo(cfg.storage_dir.clone(), cfg.storage_public_url.clone()));
-    let storage: Arc<dyn Storage> = local.clone();
+    // Storage de documentos.
+    let storage_local;
+    let storage: Arc<dyn Storage> = match &cfg.storage {
+        OrigenStorage::Local { dir, url_base } => {
+            if !Config::es_local(&cfg.entorno) {
+                tracing::warn!(
+                    "storage en disco del pod: sólo es válido con una réplica. \
+                     Configure 'blobStorageConfigValue' en Consul para usar Azure Blob"
+                );
+            }
+            let local = Arc::new(LocalStorage::nuevo(dir.clone(), url_base.clone()));
+            storage_local = Some(local.clone());
+            local
+        }
+        OrigenStorage::Azure { connection_string, account_name } => {
+            storage_local = None;
+            Arc::new(AzureBlobStorage::nuevo(connection_string, account_name)?)
+        }
+    };
+    tracing::info!(storage = storage.nombre(), "storage configurado");
 
     let generador = GeneradorCredencial { pool: pool.clone(), render: render.clone(), storage };
     let state = AppState {
@@ -52,7 +81,7 @@ async fn main() -> anyhow::Result<()> {
         pool,
         render,
         generador,
-        storage_local: Some(local),
+        storage_local,
         inicio,
     };
 

@@ -1,0 +1,32 @@
+{
+  "PlantillaId": 18,
+  "GenerarQR": false,
+  "DatosCredencial": {
+    "folio": "20260700001234",
+    "razon-social": "Veterinaria y Farmacia Animal Los Aromos SpA",
+    "rut-del-establecimiento": "76.543.210-K",
+    "direccion-establecimiento": "Av. Manuel Rodríguez 1450, Local 3",
+    "comuna-establecimiento": "Rancagua",
+    "region-establecimiento": "Región del Libertador General Bernardo O'Higgins",
+    "representante-legal": "Patricia Alejandra Fuentes Rojas",
+    "rut-representante-legal": "12.345.678-9",
+    "correo-representante-legal": "pfuentes@losaromos.cl",
+    "nombre-director-tecnico1": "Carlos Andrés Molina Vera",
+    "rut-director-tecnico1": "15.678.901-2",
+    "profesion-1": "Médico Veterinario",
+    "correo-director-tecnico1": "cmolina@losaromos.cl",
+    "nombre-director-tecnico2": "Daniela Paz Soto Ibáñez",
+    "rut-director-tecnico2": "17.890.123-4",
+    "profesion-2": "Químico Farmacéutico",
+    "correo-director-tecnico2": "dsoto@losaromos.cl",
+    "fecha-emision": "07/09/2026 10:32:15",
+    "horario-funcionamiento": "Lunes a viernes de 09:00 a 19:00 horas; sábados de 09:00 a 14:00 horas",
+    "tipo-de-establecimiento": "Farmacia Veterinaria",
+    "categoria-establecimiento": "Categoría A",
+    "tipo-medicamento": "Productos farmacéuticos de uso veterinario de venta bajo receta y de venta directa",
+    "region-rup": "06",
+    "sector-rup": "1",
+    "correlativo-fijo": "0",
+    "correlativo-rup": "01234"
+  }
+}

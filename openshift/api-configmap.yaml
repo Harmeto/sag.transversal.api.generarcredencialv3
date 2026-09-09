@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: generarcredencialv3-api
+data:
+  APP_NAME: sag.transversal.api.generarcredencialv3
+  HOST: 0.0.0.0
+  PORT: "3345"
+  LOG_LEVEL: info
+  PLANTILLAS_DIR: /app/plantillas
+  FONTS_DIR: /app/fonts
+  STORAGE_DIR: /data/storage
+  # Sustituir por el host entregado por `oc get route generarcredencialv3`.
+  STORAGE_PUBLIC_URL: https://REEMPLAZAR_CON_EL_HOST_DE_LA_ROUTE/archivos

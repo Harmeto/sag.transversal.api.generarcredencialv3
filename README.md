@@ -1,7 +1,7 @@
 # sag.transversal.api.generarcredencialV3
 
 > Generación de documentos PDF del SAG a partir de plantillas, **sin Chromium**: Rust + Typst + PostgreSQL.
-> Prueba de concepto local con dos plantillas migradas: **Datos CZE** (solicitud de exportación de perros y gatos, consumida por Procesos Digitales / appweb ciudadano) y **Bioseguridad Traspatio** (pauta F-VYC-VIS-PP-005, consumida por el BFF de Emergencias Pecuarias).
+> Prueba de concepto local con **las 15 plantillas de v2 migradas a Typst**, cada una comparada visualmente contra el render de Chromium de v2 con el mismo payload.
 
 Estado: **prueba de concepto funcional en local**. No desplegada, no conectada a recursos del SAG.
 
@@ -52,6 +52,7 @@ Cómo se midió: `scripts/bench-chromium-v2.mjs` (importa `build/app/services/br
 | Ruta inexistente | `404 { msg: "Not found" }` | Idéntico |
 | Preview | PDF inline `preview-<id>.pdf` | Idéntico |
 | Nombre de contenedor y de documento | `snake_case(categoria)` / `snake_case(plantilla)_aaaa-mm-dd_uuid` | Idéntico (forman la URL pública ya impresa en QR) |
+| Swagger | `/swagger` (UI autocontenida) y `/swagger/swagger.json` | Idéntico bajo el prefijo de v3; el documento OpenAPI se escribe a mano en `assets/openapi.json` (no hay colección Postman) |
 | Modelo de datos | Categoria, Plantilla, Credencial | Mismas entidades y campos, en PostgreSQL (snake_case, `uuid`, `timestamptz`) |
 
 Diferencias deliberadas:
@@ -87,25 +88,41 @@ Concurrencia: los renders son CPU-bound y corren en hilos bloqueantes con un sem
 
 ## 4. Plantillas migradas
 
-### Datos CZE
+Las 15 plantillas HTML de v2 tienen su equivalente `.typ` en `plantillas/`, con el mismo nombre de archivo. Cada una fue migrada siguiendo `docs/GUIA-MIGRACION-PLANTILLAS.md` y comparada página a página con Chromium (`scripts/comparar.sh`; capturas en `tmp/comparacion/<nombre>/`). Payloads de ejemplo con la forma real del consumidor en `scripts/ejemplo-<nombre>.json`; `scripts/smoke-todas.sh` las genera todas contra la API.
 
-`plantillas/mascotas/datos-cze.typ` reemplaza a `public/plantillas/mascotas/datos-cze.html` de v2. Lo que en HTML hacía JavaScript (clonar la página 2 por mascota, elegir la tabla de identificación según `microchip.tipo`, formatear fechas ISO a `dd-mm-aaaa`, numerar páginas) lo hace el lenguaje de la plantilla: loops, condicionales y contadores de página.
+| Plantilla | Páginas | Typst v3, p50 | Chromium v2, p50 | Notas de migración |
+|---|---:|---:|---:|---|
+| mascotas/datos-cze | 3 | 31 ms | 2 271 ms | JS de mascotas → loops; `mascotas` como string JSON o arreglo |
+| emergencias-pecuarias/bioseguridad-traspatio | 1 | 36 ms | 2 103 ms | Numeración real de páginas; QR según `QRTag` |
+| emergencias-pecuarias/bioseguridad-plantel | 3 | 76 ms | 2 106 ms | Derivada de traspatio; claves del BFF |
+| emergencias-pecuarias/registro-mortalidad-aves-silvestres | 1 | 30 ms | ~2 000 ms | v2 dejaba una 2ª página en blanco |
+| mascotas/certificado_argentina | 2 | 34 ms | ~2 000 ms | Página encogida por Chromium reproducida |
+| mascotas/cze-brasil | 3 | 65 ms | ~2 000 ms | Fecha de emisión al momento del render; lista vacunas de todas las mascotas (v2 sólo la primera) |
+| mosca-fruta/visita-propiedad | 3 | 74 ms | 1 637 ms | `integrantesHtml`/`hospedantesHtml` estructurados por la API, tablas anidadas conservadas |
+| alcoholes/certificado_alcoholes | 1 | 68 ms | 1 095 ms | 63 variables con guion; grilla de giros más limpia que en Chromium |
+| alimentacion-animal/inicio-actividades-establecimiento | 3 | 47 ms | ~2 000 ms | Pie en todas las páginas (v2 los apilaba en la 1ª); `otras_bodegas` HTML o arreglo |
+| expendios-veterinarios/certificado-expendio-veterinario (+ ninguna, ninguno, noninguno) | 2 | 18 ms | ~2 000 ms | `_comun.typ` compartido; las subcarpetas son `#include` |
+| cazadores/carnet_cazadores | 1 | 22 ms | 2 116 ms | Escala 82 % de Chromium reproducida; `foto` en base64 crudo |
+| plaguicidas/aplicador_plaguicidas | 1 | 21 ms | 2 108 ms | Usa Asap Condensed (en v2 nunca cargaba y salía en Times); pie en la misma página |
+| plaguicidas/certificado-inscripcion | 1 | 5 ms | 2 101 ms | Usa gobCL (en v2 nunca cargaba) |
+| test/plantilla-test | 1 | 1 ms | 2 077 ms | |
 
-Mismas variables que v2 (`numero_solicitud`, `fecha_solicitud`, datos de solicitante, exportador, viaje, emisión y generador) y el arreglo `mascotas` con `microchip`, `veterinario`, `vacunas` y `desparasitaciones`.
+Tiempos de `bench-render` (secuencial, mismo Mac). Los "~2 000 ms" de Chromium son el orden medido en las demás plantillas; no se midió cada una por separado.
 
-Fidelidad visual: misma estructura, colores, tablas y paginación. No es idéntica al píxel (Chromium y Typst no comparten motor de layout); la validación final la debe hacer el dueño del negocio. Mejora respecto de v2: sin mascota o sin microchip, v2 dejaba placeholders `{...}` sin reemplazar; v3 muestra celdas vacías o "Sin registros".
+Contrato de datos ampliado por la API (sin romper el de v2):
 
-### Bioseguridad Traspatio
+- Strings con forma de **data URL de imagen** o de **base64 crudo** de imagen (`{foto}` en carnets) llegan a la plantilla como `(format, mime, bytes)`.
+- Strings que parecen **JSON** (`mascotas`, `secciones`) llegan parseados.
+- Claves `*Html` con **fragmentos HTML** generan la clave sin sufijo con el contenido estructurado (filas de celdas, con tablas anidadas conservadas, o lista de textos).
 
-`plantillas/emergencias-pecuarias/bioseguridad-traspatio.typ` reemplaza a `emergencias-pecuarias/bioseguridad-traspatio.html`. Recibe exactamente el `DatosCredencial` que arma `BioseguridadMapper.toDatosCredencialTraspatio` en `sag.emergenciaspecuarias.bff`: datos del establecimiento, `secciones` como **string JSON** (`[{ titulo, preguntas: [{ numero, pregunta, respuesta }] } | { titulo, observacion }]`) y el QR. Los logos que v2 llevaba en base64 dentro del HTML (194 KB) viven en `plantillas/emergencias-pecuarias/assets/` y la marca de agua es un PNG con la opacidad ya aplicada.
+Defectos de v2 detectados al migrar (v3 los corrige salvo donde se indica):
 
-Hallazgos sobre v2 al migrarla:
-
-- Los `<span class="pag-actual">` y `pag-total` del encabezado nunca se rellenaban: el PDF de producción dice "Página  de ". v3 numera con contadores reales.
-- El BFF envía `GenerarQR: true` con `QRTag: <urlVerificacion>` (una URL, no el nombre del tag). v2 deja el QR bajo esa URL como clave, la plantilla busca `{QR}` y por tanto **el QR nunca aparece en el PDF de producción**. Además el QR que genera la API codifica la URL del blob, no la de verificación. v3 reproduce el comportamiento fielmente (con `QRTag: "QR"` el QR sí aparece, ver `scripts/ejemplo-bioseguridad-traspatio.json`); corregirlo es un cambio en el BFF.
-- Con muchas preguntas el `<thead>` del `print-wrapper` hace que Chromium desborde a una segunda página con una sola fila; Typst pagina el contenido de forma natural y repite el encabezado.
-
----
+- Fuentes propias (`gobCL`, `Asap Condensed`) nunca cargaban por rutas relativas con `setContent`; el PDF salía en Arial o Times.
+- Bioseguridad traspatio y plantel imprimían "Página  de " (spans nunca rellenados). El BFF envía `QRTag` con la URL de verificación, así que el QR nunca aparece en producción; v3 reproduce ese comportamiento (corregirlo es cambio del BFF).
+- Carnet de cazador: la página no cabe en carta y Chromium la encoge al 82 %. Aplicador de plaguicidas: el pie caía en una segunda página vacía. Expendios: bloque de código/folio fuera de la hoja y folio cortado. Alimentación animal: los tres pies apilados en la página 1. Mortalidad y expendios: segunda página en blanco.
+- CZE Brasil sólo listaba vacunas y desparasitaciones de la primera mascota.
+- **Nombre de contenedor inválido en Azure.** La convención de v2 (`snake_case` de la categoría) produce guion bajo en cuanto la categoría tiene más de una palabra, y Azure sólo acepta minúsculas, dígitos y guion medio: responde 400 `InvalidResourceName`. Es decir, categorías como Emergencias Pecuarias o Alimentación Animal nunca pudieron tener contenedor en Azure. v3 usa guion medio **sólo en el nombre del contenedor**; las categorías de una palabra quedan idénticas, así que ninguna URL ya emitida cambia. El nombre del documento conserva el guion bajo, que en un blob sí es válido. Verificado contra Azurite, que aplica la misma regla.
+- Mosca de la fruta: `firmaUrl` llega como URL http del blob; v3 no descarga recursos durante el render, así que la firma sólo se muestra si llega como data URL. Requiere decisión (descarga controlada en la API o cambio en el consumidor). Los logos y el timbre viven en `assets/` (reemplazar el timbre placeholder por el PNG oficial).
 
 ## 5. Correr en local
 
@@ -135,6 +152,15 @@ curl -sS -H 'Content-Type: application/json' \
   http://localhost:3345/api/v3/transversal/credencial/generarCredencial
 ```
 
+Documentación interactiva (Swagger UI) en
+[http://localhost:3345/api/v3/transversal/credencial/swagger](http://localhost:3345/api/v3/transversal/credencial/swagger),
+y el documento OpenAPI 3.0 en `.../swagger/swagger.json`. Ambos van dentro del binario
+(`assets/openapi.json` y `assets/swagger-ui/`, incrustados con `include_str!`), así que la
+página no depende de ninguna CDN y no hay nada que copiar en la imagen ni que configurar por
+ambiente: `servers` es relativo y la UI apunta al `swagger.json` de la propia instancia.
+Al agregar o cambiar un endpoint hay que editar `assets/openapi.json` a mano; `tests/swagger.rs`
+verifica que estén documentadas todas las operaciones del router.
+
 Variables de entorno: ver `.env.example`. El puerto local es `3345` porque `3334` está ocupado en este equipo.
 
 Las plantillas se leen y cachean al arrancar (el motor las precalienta). Si editas un `.typ`, reinicia la API para que lo tome; `bench-render` siempre lee la versión en disco.
@@ -152,12 +178,78 @@ Tests unitarios: `cargo test` (nombres de contenedor/documento, normalización d
 
 ---
 
-## 7. Pendiente para llevarlo a producción
+## 7. Despliegue (Azure DevOps y OpenShift)
 
-- **Adaptador Azure Blob Storage** (`storage::azure`): misma convención de contenedor/nombre, `Content-Type: application/pdf`, creación del contenedor si no existe. El puerto ya está definido; falta el adaptador y su prueba (Azurite en Docker sirve para probarlo sin recursos del SAG).
-- **Consul**: cargar `DATABASE_URL` y la conexión de storage como hace v2 (`start/consul.ts`). En local se usa `.env`.
-- **Swagger** (v2 lo genera desde la colección Postman).
-- **Migración de datos** desde MSSQL: `Categoria`, `Plantilla` y `Credencial` con sus Id originales. Atención a `fechaCreacion`: v2 guarda `datetime` sin zona escrito con `TZ=America/Santiago`; verificar si el histórico está en hora local o UTC antes de copiarlo a `timestamptz`.
-- **Las otras 13 plantillas.** Las 10 estáticas son trabajo de reescritura. Bioseguridad plantel es casi idéntica a traspatio (misma estructura, otro código de formulario y otros campos de cabecera). Mosca de la fruta recibe fragmentos HTML (`integrantesHtml`, `hospedantesHtml`) y requiere acordar datos estructurados con ese equipo.
-- **Probes y HPA** en `deploy-openshift.yaml`: readiness sobre `/health`, escalado por CPU (ahora sí es la métrica correcta, porque el render es CPU puro).
+El servicio usa el pipeline estándar del SAG, `release/v7` de
+`sag.transversal.templates.pipelines`, que separa CI de CD:
+
+```
+Build (azure-pipelines.yml, extiende el template)      →  UNA imagen: {ACR}/{repo}:{versión}
+                                                          + artifact `config` (package.json, deploy-paths.json)
+Release (UI de Azure DevOps, 1 variable: ENVIRONMENT)  →  lee {ambiente}/{proyecto}/deploy de Consul
+                                                          → ConfigMap + Deployment + Service + Route + HPA
+```
+
+**Una construcción sirve para todos los ambientes.** La imagen no lleva configuración
+horneada: el ambiente lo fija `NODE_ENV` (lo pone el ConfigMap del release) y todo lo demás
+se lee de Consul al arrancar. Para pasar de desarrollo a producción se crea otro release del
+mismo build cambiando `ENVIRONMENT`.
+
+Archivos que este repositorio aporta al pipeline:
+
+| Archivo | Para qué |
+|---|---|
+| `azure-pipelines.yml` | Extiende el template v7. Desactiva los stages de pruebas, SonarQube y Bearer, que asumen un proyecto Node |
+| `package.json` | Sin dependencias. El pipeline lee de aquí el nombre (etiqueta de la imagen y prefijo de las keys de Consul) y la versión. Un test verifica que la versión coincida con `Cargo.toml` |
+| `.npmrc` | Sólo el registro, sin credenciales. Existe porque la tarea `npmAuthenticate` del template lo exige |
+| `Dockerfile` | Compila y **corre las pruebas** dentro de la imagen, así el agente no necesita Rust. Capa de dependencias cacheada aparte |
+| `deploy-paths.json` | Rutas del servicio para el registro en el gateway |
+
+Detalles de la imagen:
+
+- Tres etapas: dependencias (capa cacheable), compilación con `cargo test`, y runtime sobre
+  `debian:bookworm-slim` con las fuentes Liberation y DejaVu. Sin Chromium y sin Node.
+- OpenShift ejecuta con un UID arbitrario del grupo 0, así que los archivos van al grupo
+  root con `chmod g=u`.
+- `docker build --build-arg RUN_TESTS=false` salta las pruebas si se necesita un build rápido.
+- **Tamaño**: 61 MB comprimidos (lo que viaja al registro y se descarga en cada pod) y
+  240 MB en disco. El desglose en disco es 108 MB de base Debian, 54 MB del binario,
+  16 MB de fuentes y certificados del sistema, y 2,4 MB de plantillas y fuentes propias.
+  Como referencia, sólo la base del runtime de v2 (Alpine con Node y Chromium, sin
+  `node_modules` ni código) pesa 279 MB comprimidos y 999 MB en disco.
+  Los permisos se aplican en el propio `COPY --chown` y no con un `chmod -R` posterior:
+  cambiar permisos en una capa nueva obliga a duplicar los archivos, lo que costaba
+  26 MB comprimidos de más.
+
+### Almacenamiento verificado contra Azure
+
+El adaptador de Azure Blob está probado contra la **cuenta real de desarrollo**: se generaron y
+subieron las 17 plantillas, se crearon los nueve contenedores (incluidos los de categorías de
+más de una palabra, con guion medio) y las 17 URL guardadas en base se descargan sin
+credenciales, que es de lo que dependen los códigos QR.
+
+Esa prueba encontró dos cosas que Azurite no reproduce:
+
+- Azure responde **411** a un `PUT` sin `Content-Length`, y crear un contenedor es justamente
+  eso. Corregido: los `PUT` y `POST` sin cuerpo llevan `Content-Length: 0`.
+- Un contenedor puede quedar **sin lectura pública** (creado a mano, por una versión anterior,
+  o por un fallo puntual). En ese caso las URL responden 404 a cualquiera sin credenciales y
+  nadie se entera hasta que alguien intenta abrir su documento. El adaptador ahora lo detecta
+  al subir y lo corrige, sin costo adicional en el caso normal y sin poder interrumpir la
+  subida si la corrección falla.
+
+La configuración de Consul, con el detalle de cada key y su JSON, está en
+[docs/CONSUL.md](docs/CONSUL.md). El traspaso de los datos de v2, en
+[docs/MIGRACION-DATOS.md](docs/MIGRACION-DATOS.md).
+
+---
+
+## 8. Pendiente para llevarlo a producción
+
+- **Base de datos por ambiente**: crear la base PostgreSQL en cada ambiente antes del primer despliegue (las tablas las crea la aplicación con sus migraciones).
+- **Ejecutar la migración de datos** en cada ambiente cuando llegue el corte. La herramienta ya existe y está probada (`scripts/exportar-v2.mjs` + `migrar-datos`, ver [docs/MIGRACION-DATOS.md](docs/MIGRACION-DATOS.md)); lo que falta es correrla contra las bases reales.
+- **Validación de negocio de las 15 plantillas**: la fidelidad se verificó contra Chromium con payloads de ejemplo; falta que cada dueño de proceso apruebe su documento con datos reales.
+- **`firmaUrl` de mosca de la fruta** (ver §4) y el timbre oficial en `assets/`.
+- **Probes** en el Deployment: el template v7 no define readiness ni liveness. Conviene proponerlo al equipo de plataforma apuntando a `/health`, que ya existe. El HPA por CPU del template sí es adecuado, porque el render es cálculo puro.
 - **Fuentes en la imagen**: Liberation Sans reemplaza a Arial en Linux (métricamente compatible). Si el negocio exige Arial, hay que licenciarla e incluirla en `fonts/`.
+- **Acceso público en el resto de los ambientes**: en desarrollo está verificado (ver §7). En test, QA y producción hay que confirmar que la cuenta permita `AllowBlobPublicAccess`, o los códigos QR no se podrán leer sin credenciales.

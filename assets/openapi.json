@@ -1,0 +1,683 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "SAG · API transversal de generación de credenciales (v3)",
+    "version": "3.0.0",
+    "description": "Genera documentos PDF del SAG a partir de plantillas Typst y los publica en el storage configurado (disco local o Azure Blob).\n\nConserva el contrato de la v2 (rutas equivalentes bajo otro prefijo, mismos payloads y mismas formas de respuesta), pero sin Chromium y sobre PostgreSQL.\n\nDiferencias deliberadas respecto de v2:\n\n- Un fallo del motor de render responde `500`, no `404`: en v2 un timeout de Chromium se confundía con «la plantilla no existe».\n- `DatosCredencial` acepta estructuras como arreglo/objeto **o** como string con JSON serializado.\n- Si se pide QR, la plantilla recibe además `__qr_svg` y `__qr_url`.\n\nNo documentado aquí: `GET /archivos/{contenedor}/{nombre}`, que sirve los PDF cuando `STORAGE_DRIVER=local`. Vive fuera de este prefijo y en los ambientes no existe (allí los documentos los sirve Azure Blob).",
+    "license": {
+      "name": "ISC"
+    }
+  },
+  "servers": [
+    {
+      "url": "/api/v3/transversal/credencial",
+      "description": "La misma instancia que sirve esta documentación (URL relativa: funciona igual en local y en cada ambiente)."
+    }
+  ],
+  "tags": [
+    { "name": "Estado", "description": "Salud del servicio." },
+    { "name": "Catálogos", "description": "Consulta de categorías, plantillas y credenciales generadas." },
+    { "name": "Generación", "description": "Generación de documentos PDF." }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": ["Estado"],
+        "summary": "Estado del servicio",
+        "description": "Responde siempre `200`. `status` es `UP` si la base de datos contesta y `DEGRADED` si no.",
+        "operationId": "health",
+        "responses": {
+          "200": {
+            "description": "Estado del servicio",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Health" },
+                "example": {
+                  "status": "UP",
+                  "message": "Service is running",
+                  "timestamp": 1757372400000,
+                  "uptime": 12.5,
+                  "render": { "motor": "typst", "slotsDisponibles": 8 },
+                  "storage": "local"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/categoria": {
+      "get": {
+        "tags": ["Catálogos"],
+        "summary": "Listar categorías",
+        "description": "Devuelve un arreglo, o la forma paginada `{ meta, data }` si `paginate=true`. Cada categoría trae sus plantillas.",
+        "operationId": "categoriaIndex",
+        "parameters": [
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Orden. Por omisión `categoria_id_asc`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "categoria_id_asc",
+                "categoria_id_desc",
+                "categoria_nombre_asc",
+                "categoria_nombre_desc"
+              ]
+            }
+          },
+          { "$ref": "#/components/parameters/Paginate" },
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/Limit" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Listado de categorías",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    { "type": "array", "items": { "$ref": "#/components/schemas/Categoria" } },
+                    { "$ref": "#/components/schemas/CategoriaPaginada" }
+                  ]
+                },
+                "example": [
+                  {
+                    "id": 1,
+                    "nombre": "Mascotas",
+                    "plantillas": [
+                      { "id": 1, "nombre": "Datos CZE", "ruta": "mascotas/datos-cze.typ", "categoriaId": 1 },
+                      { "id": 4, "nombre": "CZE Brasil", "ruta": "mascotas/cze-brasil.typ", "categoriaId": 1 }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ErrorValidacion" }
+        }
+      }
+    },
+    "/categoria/{id}": {
+      "get": {
+        "tags": ["Catálogos"],
+        "summary": "Obtener una categoría",
+        "operationId": "categoriaShow",
+        "parameters": [{ "$ref": "#/components/parameters/IdNumerico" }],
+        "responses": {
+          "200": {
+            "description": "Categoría con sus plantillas",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Categoria" },
+                "example": {
+                  "id": 1,
+                  "nombre": "Mascotas",
+                  "plantillas": [
+                    { "id": 1, "nombre": "Datos CZE", "ruta": "mascotas/datos-cze.typ", "categoriaId": 1 },
+                    { "id": 4, "nombre": "CZE Brasil", "ruta": "mascotas/cze-brasil.typ", "categoriaId": 1 }
+                  ]
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ErrorValidacion" },
+          "404": { "$ref": "#/components/responses/NoEncontrado" }
+        }
+      }
+    },
+    "/plantilla": {
+      "get": {
+        "tags": ["Catálogos"],
+        "summary": "Listar plantillas",
+        "description": "Devuelve un arreglo, o la forma paginada `{ meta, data }` si `paginate=true`.",
+        "operationId": "plantillaIndex",
+        "parameters": [
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Orden. Por omisión `plantilla_id_asc`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "plantilla_id_asc",
+                "plantilla_id_desc",
+                "plantilla_nombre_asc",
+                "plantilla_nombre_desc",
+                "plantilla_ruta_asc",
+                "plantilla_ruta_desc"
+              ]
+            }
+          },
+          { "$ref": "#/components/parameters/Paginate" },
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/Limit" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Listado de plantillas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    { "type": "array", "items": { "$ref": "#/components/schemas/Plantilla" } },
+                    { "$ref": "#/components/schemas/PlantillaPaginada" }
+                  ]
+                },
+                "example": [
+                  { "id": 1, "nombre": "Datos CZE", "ruta": "mascotas/datos-cze.typ", "categoriaId": 1 },
+                  { "id": 16, "nombre": "Certificado Inscripción", "ruta": "plaguicidas/certificado-inscripcion.typ", "categoriaId": 8 }
+                ]
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ErrorValidacion" }
+        }
+      }
+    },
+    "/plantilla/{id}": {
+      "get": {
+        "tags": ["Catálogos"],
+        "summary": "Obtener una plantilla",
+        "operationId": "plantillaShow",
+        "parameters": [{ "$ref": "#/components/parameters/IdNumerico" }],
+        "responses": {
+          "200": {
+            "description": "Plantilla",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Plantilla" },
+                "example": { "id": 1, "nombre": "Datos CZE", "ruta": "mascotas/datos-cze.typ", "categoriaId": 1 }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ErrorValidacion" },
+          "404": { "$ref": "#/components/responses/NoEncontrado" }
+        }
+      }
+    },
+    "/credencial": {
+      "get": {
+        "tags": ["Catálogos"],
+        "summary": "Listar credenciales generadas",
+        "description": "Devuelve un arreglo, o la forma paginada `{ meta, data }` si `paginate=true`.",
+        "operationId": "credencialIndex",
+        "parameters": [
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Orden. Por omisión `credencial_id_asc`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "credencial_id_asc",
+                "credencial_id_desc",
+                "credencial_categoria_id_asc",
+                "credencial_categoria_id_desc",
+                "fecha_creacion_asc",
+                "fecha_creacion_desc"
+              ]
+            }
+          },
+          { "$ref": "#/components/parameters/Paginate" },
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/Limit" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Listado de credenciales",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    { "type": "array", "items": { "$ref": "#/components/schemas/Credencial" } },
+                    { "$ref": "#/components/schemas/CredencialPaginada" }
+                  ]
+                },
+                "examples": {
+                  "arreglo": {
+                    "summary": "Sin paginar",
+                    "value": [
+                      {
+                        "id": "6f1b0f5e-3f2a-4a1e-9a7d-2b0c4f5d8e91",
+                        "categoriaId": 1,
+                        "url": "http://localhost:3345/archivos/plaguicidas/certificado_inscripcion_2026-09-08_6f1b0f5e-3f2a-4a1e-9a7d-2b0c4f5d8e91",
+                        "fechaCreacion": "2026-09-08T10:15:30.000-03:00"
+                      }
+                    ]
+                  },
+                  "paginado": {
+                    "summary": "Con paginate=true&limit=1",
+                    "value": {
+                      "meta": {
+                        "total": 2,
+                        "perPage": 1,
+                        "currentPage": 1,
+                        "lastPage": 2,
+                        "firstPage": 1,
+                        "firstPageUrl": "https://servicios.sag.gob.cl/api/v3/transversal/credencial/credencial?paginate=true&limit=1&page=1",
+                        "lastPageUrl": "https://servicios.sag.gob.cl/api/v3/transversal/credencial/credencial?paginate=true&limit=1&page=2",
+                        "nextPageUrl": "https://servicios.sag.gob.cl/api/v3/transversal/credencial/credencial?paginate=true&limit=1&page=2",
+                        "previousPageUrl": null
+                      },
+                      "data": [
+                        {
+                          "id": "6f1b0f5e-3f2a-4a1e-9a7d-2b0c4f5d8e91",
+                          "categoriaId": 1,
+                          "url": "https://sagstorage.blob.core.windows.net/plaguicidas/certificado_inscripcion_2026-09-08_6f1b0f5e-3f2a-4a1e-9a7d-2b0c4f5d8e91",
+                          "fechaCreacion": "2026-09-08T10:15:30.000-03:00"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ErrorValidacion" }
+        }
+      }
+    },
+    "/credencial/{guid}": {
+      "get": {
+        "tags": ["Catálogos"],
+        "summary": "Obtener una credencial por su GUID",
+        "operationId": "credencialShow",
+        "parameters": [
+          {
+            "name": "guid",
+            "in": "path",
+            "required": true,
+            "description": "GUID devuelto por `POST /generarCredencial`.",
+            "schema": { "type": "string", "format": "uuid" },
+            "example": "6f1b0f5e-3f2a-4a1e-9a7d-2b0c4f5d8e91"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Credencial",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Credencial" },
+                "example": {
+                  "id": "6f1b0f5e-3f2a-4a1e-9a7d-2b0c4f5d8e91",
+                  "categoriaId": 1,
+                  "url": "http://localhost:3345/archivos/plaguicidas/certificado_inscripcion_2026-09-08_6f1b0f5e-3f2a-4a1e-9a7d-2b0c4f5d8e91",
+                  "fechaCreacion": "2026-09-08T10:15:30.000-03:00"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "El `guid` no es un UUID válido",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErroresValidacion" },
+                "example": [
+                  { "message": "The guid field must be a valid UUID", "rule": "uuid", "field": "guid" }
+                ]
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NoEncontrado" }
+        }
+      }
+    },
+    "/generarCredencial": {
+      "post": {
+        "tags": ["Generación"],
+        "summary": "Generar un documento y registrarlo",
+        "description": "Renderiza la plantilla con `DatosCredencial`, guarda el PDF en el storage y registra la credencial. Devuelve `201` con el GUID y la URL pública del documento.\n\nSi `GenerarQR` es `true`, el GUID (y por lo tanto la URL) se reserva **antes** de renderizar, de modo que el QR impreso apunte al documento que se está generando.",
+        "operationId": "generarCredencial",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/SolicitudGeneracion" },
+              "examples": {
+                "minimo": {
+                  "summary": "Mínimo (scripts/ejemplo-plantilla-test.json)",
+                  "description": "Los `PlantillaId` de los ejemplos son los del archivo de ejemplo del repositorio; el id real depende del catálogo de cada ambiente (`GET /plantilla`).",
+                  "value": {
+                    "PlantillaId": 1,
+                    "GenerarQR": false,
+                    "DatosCredencial": {
+                      "nombre": "Juan Pablo",
+                      "apellido": "Rojas Ibáñez"
+                    }
+                  }
+                },
+                "conQr": {
+                  "summary": "Con QR (scripts/ejemplo-certificado-inscripcion.json, con GenerarQR activado)",
+                  "description": "El data URL del QR llega a la plantilla bajo la clave indicada en `QRTag`.",
+                  "value": {
+                    "PlantillaId": 5,
+                    "GenerarQR": true,
+                    "QRTag": "QR",
+                    "DatosCredencial": {
+                      "nombre": "AGROINSUMOS DEL SUR S.A.",
+                      "region": "Región Metropolitana",
+                      "mesano": "septiembre de 2026"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Documento generado y registrado",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CredencialCreada" },
+                "example": {
+                  "guid": "6f1b0f5e-3f2a-4a1e-9a7d-2b0c4f5d8e91",
+                  "categoriaId": 1,
+                  "url": "http://localhost:3345/archivos/plaguicidas/certificado_inscripcion_2026-09-08_6f1b0f5e-3f2a-4a1e-9a7d-2b0c4f5d8e91",
+                  "fechaCreacion": "2026-09-08T10:15:30.000-03:00"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Payload inválido (arreglo de errores) o fallo al guardar el documento (`{ title, status }`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    { "$ref": "#/components/schemas/ErroresValidacion" },
+                    { "$ref": "#/components/schemas/ErrorTitulo" }
+                  ]
+                },
+                "examples": {
+                  "validacion": {
+                    "summary": "Campos inválidos",
+                    "value": [
+                      { "message": "The PlantillaId field must be defined", "rule": "required", "field": "PlantillaId" },
+                      { "message": "The DatosCredencial field must be an object", "rule": "object", "field": "DatosCredencial" }
+                    ]
+                  },
+                  "guardar": {
+                    "summary": "El documento no se pudo guardar en el storage",
+                    "value": { "title": "Bad Request", "status": 400 }
+                  }
+                }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NoEncontrado" },
+          "500": { "$ref": "#/components/responses/ErrorInterno" }
+        }
+      }
+    },
+    "/generarPreview": {
+      "post": {
+        "tags": ["Generación"],
+        "summary": "Previsualizar un documento (sin guardarlo)",
+        "description": "Mismo payload que `/generarCredencial`, pero devuelve el PDF en el cuerpo (`Content-Disposition: inline; filename=\"preview-<id>.pdf\"`). No escribe en el storage ni registra nada.",
+        "operationId": "generarPreview",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/SolicitudGeneracion" },
+              "example": {
+                "PlantillaId": 1,
+                "GenerarQR": false,
+                "DatosCredencial": {
+                  "nombre": "Juan Pablo",
+                  "apellido": "Rojas Ibáñez"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "PDF generado",
+            "headers": {
+              "Content-Disposition": {
+                "description": "`inline; filename=\"preview-<id>.pdf\"`",
+                "schema": { "type": "string" }
+              }
+            },
+            "content": {
+              "application/pdf": {
+                "schema": { "type": "string", "format": "binary" }
+              }
+            }
+          },
+          "400": {
+            "description": "Payload inválido",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErroresValidacion" }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NoEncontrado" },
+          "500": { "$ref": "#/components/responses/ErrorInterno" }
+        }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "IdNumerico": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "description": "Identificador entero positivo.",
+        "schema": { "type": "integer", "format": "int32", "minimum": 1 },
+        "example": 1
+      },
+      "Paginate": {
+        "name": "paginate",
+        "in": "query",
+        "required": false,
+        "description": "Si es verdadero devuelve la forma `{ meta, data }` en vez de un arreglo. Se aceptan `true`/`1`/`on` y `false`/`0`/`off`.",
+        "schema": { "type": "boolean" }
+      },
+      "Page": {
+        "name": "page",
+        "in": "query",
+        "required": false,
+        "description": "Página (entero positivo). Sólo tiene efecto con `paginate=true`. Por omisión `1`.",
+        "schema": { "type": "integer", "minimum": 1 }
+      },
+      "Limit": {
+        "name": "limit",
+        "in": "query",
+        "required": false,
+        "description": "Elementos por página (entero positivo). Sólo tiene efecto con `paginate=true`. Por omisión `10`.",
+        "schema": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "responses": {
+      "ErrorValidacion": {
+        "description": "Parámetros inválidos (formato VineJS de v2)",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErroresValidacion" },
+            "example": [
+              { "message": "The selected sort is invalid", "rule": "exists", "field": "sort" },
+              { "message": "The page field must be a number", "rule": "number", "field": "page" }
+            ]
+          }
+        }
+      },
+      "NoEncontrado": {
+        "description": "El recurso no existe",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorTitulo" },
+            "example": { "title": "Not Found", "status": 404 }
+          }
+        }
+      },
+      "ErrorInterno": {
+        "description": "Fallo del motor de render o error interno",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorTitulo" },
+            "example": { "title": "Internal Server Error", "status": 500 }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Health": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "string", "enum": ["UP", "DEGRADED"] },
+          "message": { "type": "string" },
+          "timestamp": { "type": "integer", "format": "int64", "description": "Epoch en milisegundos." },
+          "uptime": { "type": "number", "description": "Segundos desde el arranque." },
+          "render": {
+            "type": "object",
+            "properties": {
+              "motor": { "type": "string", "example": "typst" },
+              "slotsDisponibles": { "type": "integer", "description": "Renders simultáneos libres en el pool." }
+            }
+          },
+          "storage": { "type": "string", "enum": ["local", "azure"] }
+        }
+      },
+      "Categoria": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "format": "int32" },
+          "nombre": { "type": "string" },
+          "plantillas": { "type": "array", "items": { "$ref": "#/components/schemas/Plantilla" } }
+        }
+      },
+      "Plantilla": {
+        "type": "object",
+        "description": "El motor de render (`typst` | `chromium`) no se serializa.",
+        "properties": {
+          "id": { "type": "integer", "format": "int32" },
+          "nombre": { "type": "string" },
+          "ruta": { "type": "string", "description": "Ruta del archivo relativa a `PLANTILLAS_DIR`." },
+          "categoriaId": { "type": "integer", "format": "int32" }
+        }
+      },
+      "Credencial": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "categoriaId": { "type": "integer", "format": "int32" },
+          "url": { "type": "string", "format": "uri", "description": "URL pública del PDF." },
+          "fechaCreacion": {
+            "type": "string",
+            "description": "ISO 8601 con milisegundos y desfase de America/Santiago.",
+            "example": "2026-09-08T10:15:30.000-03:00"
+          }
+        }
+      },
+      "CredencialCreada": {
+        "type": "object",
+        "description": "Igual a `Credencial`, pero el identificador viaja como `guid` (nombre heredado de v2).",
+        "properties": {
+          "guid": { "type": "string", "format": "uuid" },
+          "categoriaId": { "type": "integer", "format": "int32" },
+          "url": { "type": "string", "format": "uri" },
+          "fechaCreacion": { "type": "string", "example": "2026-09-08T10:15:30.000-03:00" }
+        }
+      },
+      "MetaPaginacion": {
+        "type": "object",
+        "description": "Forma de `SimplePaginator.serialize()` de Lucid (v2).",
+        "properties": {
+          "total": { "type": "integer" },
+          "perPage": { "type": "integer" },
+          "currentPage": { "type": "integer" },
+          "lastPage": { "type": "integer" },
+          "firstPage": { "type": "integer" },
+          "firstPageUrl": { "type": "string" },
+          "lastPageUrl": { "type": "string" },
+          "nextPageUrl": { "type": "string", "nullable": true },
+          "previousPageUrl": { "type": "string", "nullable": true }
+        }
+      },
+      "CategoriaPaginada": {
+        "type": "object",
+        "properties": {
+          "meta": { "$ref": "#/components/schemas/MetaPaginacion" },
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/Categoria" } }
+        }
+      },
+      "PlantillaPaginada": {
+        "type": "object",
+        "properties": {
+          "meta": { "$ref": "#/components/schemas/MetaPaginacion" },
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/Plantilla" } }
+        }
+      },
+      "CredencialPaginada": {
+        "type": "object",
+        "properties": {
+          "meta": { "$ref": "#/components/schemas/MetaPaginacion" },
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/Credencial" } }
+        }
+      },
+      "SolicitudGeneracion": {
+        "type": "object",
+        "required": ["PlantillaId", "DatosCredencial"],
+        "properties": {
+          "PlantillaId": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Id de la plantilla (ver `GET /plantilla`)."
+          },
+          "DatosCredencial": {
+            "$ref": "#/components/schemas/DatosCredencial"
+          },
+          "GenerarQR": {
+            "type": "boolean",
+            "default": false,
+            "description": "Si es `true`, se genera un código QR con la URL pública del documento y se entrega a la plantilla bajo la clave `QRTag`. La plantilla recibe además `__qr_svg` (SVG en texto) y `__qr_url`."
+          },
+          "QRTag": {
+            "type": "string",
+            "nullable": true,
+            "default": "QR",
+            "description": "Clave bajo la cual la plantilla recibe el QR. Si se omite o va vacía, se usa `QR`."
+          }
+        }
+      },
+      "DatosCredencial": {
+        "type": "object",
+        "additionalProperties": true,
+        "description": "Objeto libre: sus claves son las variables que consume la plantilla, así que dependen de cada una.\n\nAntes de renderizar se aplican estas normalizaciones (compatibilidad con los consumidores de v2):\n\n- **JSON serializado**: un valor string que empieza y termina con `[]` o `{}` y parsea como JSON se entrega estructurado (p. ej. `\"mascotas\": \"[{...}]\"`).\n- **Fragmentos HTML**: por cada clave `xHtml` / `xHTML` / `x_html` con valor string se agrega una clave `x` con el contenido estructurado (filas de celdas si trae `<tr>`, lista de textos si trae `<span>`, `<li>` o `<p>`, texto plano en otro caso). La clave original se conserva.\n- **Imágenes**: un valor string con forma de data URL (`data:image/png;base64,...`), o base64 crudo cuya firma corresponde a una imagen (el caso de `foto` en los carnets), llega a la plantilla como `(format, mime, bytes)` para que Typst lo incruste.",
+        "example": {
+          "nombre": "Juan Pablo",
+          "apellido": "Rojas Ibáñez"
+        }
+      },
+      "ErroresValidacion": {
+        "type": "array",
+        "description": "Errores de validación con el formato de VineJS que usaba v2.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "message": { "type": "string" },
+            "rule": { "type": "string" },
+            "field": { "type": "string" }
+          }
+        }
+      },
+      "ErrorTitulo": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string" },
+          "status": { "type": "integer" }
+        }
+      }
+    }
+  }
+}

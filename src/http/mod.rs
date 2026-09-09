@@ -6,6 +6,7 @@ pub mod catalogos;
 pub mod generar;
 pub mod health;
 pub mod listado;
+pub mod swagger;
 
 use crate::render::RenderPool;
 use crate::services::generar_credencial::GeneradorCredencial;
@@ -42,7 +43,9 @@ pub fn router(state: AppState) -> Router {
         .route("/credencial", get(catalogos::credencial_index))
         .route("/credencial/{guid}", get(catalogos::credencial_show))
         .route("/generarCredencial", post(generar::store))
-        .route("/generarPreview", post(generar::preview));
+        .route("/generarPreview", post(generar::preview))
+        .route("/swagger", get(swagger::ui))
+        .route("/swagger/swagger.json", get(swagger::documento));
 
     let cors = CorsLayer::new()
         .allow_origin(Any)

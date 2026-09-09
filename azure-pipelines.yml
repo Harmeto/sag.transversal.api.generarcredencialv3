@@ -1,0 +1,69 @@
+# ============================================
+# Pipeline CI - sag.transversal.api.generarcredencialv3
+#
+# Extiende el pipeline estándar del SAG (release/v7). El build produce UNA imagen,
+# etiquetada con la versión de package.json, y publica el artifact `config`. El
+# despliegue a cada ambiente lo hace el Release Pipeline de Azure DevOps, que toma
+# la configuración desde Consul: una misma imagen sirve para dev, test, qa y prod.
+#
+# Notas propias de este repositorio (Rust, no Node):
+#   - `package.json` no declara dependencias; existe porque el pipeline lee de ahí
+#     el nombre y la versión. Su versión debe coincidir con Cargo.toml (hay un test).
+#   - `.npmrc` existe porque la tarea npmAuthenticate del template lo exige.
+#   - La compilación y las pruebas ocurren DENTRO del Dockerfile, así que el agente
+#     no necesita tener Rust instalado.
+#   - Unit tests, SonarQube y Bearer quedan desactivados: esos stages del template
+#     asumen un proyecto Node. Las pruebas de Rust corren en el build de la imagen.
+# ============================================
+
+parameters:
+  - name: runBuild
+    displayName: 'Run Build & Push Docker Image'
+    type: boolean
+    default: true
+
+  - name: runUnityTests
+    displayName: 'Run Unit Tests (stage Node; en este repo las pruebas van en el Dockerfile)'
+    type: boolean
+    default: false
+
+  - name: runSonarQube
+    displayName: 'Run SonarQube Analysis (sin analizador de Rust)'
+    type: boolean
+    default: false
+
+  - name: runSecurityAnalysis
+    displayName: 'Run Security Analysis (Bearer; sin soporte de Rust)'
+    type: boolean
+    default: false
+
+  - name: nodeEnv
+    displayName: 'Node Environment for tests'
+    type: string
+    default: 'dev'
+
+  - name: port
+    displayName: 'Application Port'
+    type: number
+    default: 3000
+
+trigger: none
+
+resources:
+  repositories:
+    - repository: templatesRepo
+      type: git
+      name: 'Soluciones Transversales/sag.transversal.templates.pipelines'
+      ref: refs/heads/master
+
+extends:
+  template: release/v7/azure-pipelines-nodejs.yaml@templatesRepo
+  parameters:
+    runBuild: ${{ parameters.runBuild }}
+    runUnityTests: ${{ parameters.runUnityTests }}
+    runSonarQube: ${{ parameters.runSonarQube }}
+    runSecurityAnalysis: ${{ parameters.runSecurityAnalysis }}
+    nodeEnv: ${{ parameters.nodeEnv }}
+    port: ${{ parameters.port }}
+    poolName: 'SAG'
+    agentName: ''

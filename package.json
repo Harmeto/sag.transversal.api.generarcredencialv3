@@ -1,0 +1,10 @@
+{
+  "name": "sag.transversal.api.generarcredencialv3",
+  "version": "3.0.0",
+  "private": true,
+  "description": "API transversal de generación de documentos PDF del SAG (v3): Rust + Typst + PostgreSQL. Este package.json NO declara dependencias: existe porque el pipeline estándar del SAG (release/v7 de sag.transversal.templates.pipelines) toma desde aquí el nombre del proyecto y la versión, tanto para etiquetar la imagen como para armar la key de Consul. La versión debe coincidir con la de Cargo.toml; hay un test que lo verifica.",
+  "license": "ISC",
+  "scripts": {
+    "test": "cargo test --locked"
+  }
+}

@@ -4,6 +4,7 @@
 //! API que v2 (rutas, payloads y respuestas), sin Chromium y sobre PostgreSQL.
 
 pub mod config;
+pub mod consul;
 pub mod error;
 pub mod http;
 pub mod render;

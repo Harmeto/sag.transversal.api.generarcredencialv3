@@ -14,6 +14,10 @@ path = "src/main.rs"
 name = "bench-render"
 path = "src/bin/bench_render.rs"
 
+[[bin]]
+name = "migrar-datos"
+path = "src/bin/migrar_datos.rs"
+
 [dependencies]
 axum = { version = "0.8", features = ["macros"] }
 tokio = { version = "1", features = ["full"] }
@@ -30,6 +34,8 @@ typst-pdf = "0.15"
 typst-layout = "0.15"
 qrcode = { version = "0.14", default-features = false, features = ["svg"] }
 base64 = "0.22"
+hmac = "0.12"
+sha2 = "0.10"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 dotenvy = "0.15"
@@ -37,6 +43,7 @@ thiserror = "2"
 anyhow = "1"
 unicode-normalization = "0.1"
 futures = "0.3"
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
 
 [profile.release]
 opt-level = 3

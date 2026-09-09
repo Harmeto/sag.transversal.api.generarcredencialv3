@@ -1,0 +1,10 @@
+{
+  "paths": [
+    { "name": "health",             "path": "/api/v3/transversal/credencial/health",           "method": ["GET"],  "protocols": ["http", "https"] },
+    { "name": "credencial",         "path": "/api/v3/transversal/credencial/credencial",       "method": ["GET"],  "protocols": ["http", "https"] },
+    { "name": "plantilla",          "path": "/api/v3/transversal/credencial/plantilla",        "method": ["GET"],  "protocols": ["http", "https"] },
+    { "name": "categoria",          "path": "/api/v3/transversal/credencial/categoria",        "method": ["GET"],  "protocols": ["http", "https"] },
+    { "name": "generar-credencial", "path": "/api/v3/transversal/credencial/generarCredencial","method": ["POST"], "protocols": ["http", "https"] },
+    { "name": "generar-preview",    "path": "/api/v3/transversal/credencial/generarPreview",   "method": ["POST"], "protocols": ["http", "https"] }
+  ]
+}
